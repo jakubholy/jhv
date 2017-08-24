@@ -1,0 +1,6 @@
+{
+    "require": {
+        "tuscanicz/soap": "^4.2",
+        "symfony/console": "^3.3"
+    }
+}
