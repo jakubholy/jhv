@@ -32,10 +32,18 @@ final class GetPostCodesCommand extends Command {
             // the full command description shown when running the command with
             // the "--help" option
             ->setHelp('Provide 2 or 3 names of towns.')
+
+            ->addArgument(
+                'towns',
+                InputArgument::IS_ARRAY,
+                'Towns for which you want to know the postcode'
+            );
         ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output) {
+        $towns = $this->validateInput($input);
+
         try {
             $soapClientBuilder = new SoapClientBuilder();
             $soapClient = $soapClientBuilder->build(
@@ -48,22 +56,26 @@ final class GetPostCodesCommand extends Command {
             error_log($sfex->getMessage());
             exit(1);
         }
-        try {
-            $townData = $this->requestPostCodeByTown('London', $soapClient);
-            $this->echoPostCodes($townData);
-            $townData = $this->requestPostCodeByTown('Manchester', $soapClient);
-            $this->echoPostCodes($townData);
 
+        foreach ($towns as $town) {
+            try {
+                $townData = $this->requestPostCodeByTown($town, $soapClient);
+                $this->echoPostCodes($townData);
+            } catch (SoapFault $sfex) {
+                echo 'SOAP request failed for city '.$town.'.' . "\n";
+                error_log($sfex->getMessage());
+            }
         }
-        catch (SoapFault $sfex) {
-            echo 'SOAP request failed.'."\n";
-            error_log($sfex->getMessage());
-            exit(2);
+    }
+
+    private function validateInput(InputInterface $input) {
+        $towns = $input->getArgument('towns');
+        $towns = array_unique($towns);
+        if (count($towns) < 2 || count($towns) > 3) {
+            echo 'You have to provide exactly 2 or 3 town names.'."\n";
+            exit(3);
         }
-
-
-
-
+        return $towns;
     }
 
     private function echoPostCodes($data) {
