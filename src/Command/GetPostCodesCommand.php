@@ -85,19 +85,21 @@ final class GetPostCodesCommand extends Command {
     }
 
     private function requestPostCodeByTown($town, SoapClient $soapClient) {
-            $myRequest = new \stdClass();
-            $myRequest->Town = $town;
-            $soapResponse = $soapClient->soapCall(self::METHOD_NAME, [$myRequest]);
+        $myRequest = new \stdClass();
+        $myRequest->Town = $town;
+        $soapResponse = $soapClient->soapCall(self::METHOD_NAME, [$myRequest]);
 
-            $document = $soapResponse->getContentDocument();
+        $document = $soapResponse->getContentDocument();
 
-            $crawler = new Crawler($document->textContent);
+        return self::crawlData($document->textContent);
+    }
 
-            $crawler = $crawler->filterXPath(self::RESPONSE_ITEM_XPATH);
+    public static function crawlData($content) {
+        $crawler = new Crawler($content);
 
-            $data = $this->parseDom($crawler);
+        $crawler = $crawler->filterXPath(self::RESPONSE_ITEM_XPATH);
 
-            return $data;
+        return self::parseDom($crawler);
     }
 
     private static function parseDom(Crawler $dom) {
